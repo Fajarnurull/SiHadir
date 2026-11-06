@@ -1,0 +1,18 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    match /selfie/{allPaths=**} {
+      // Izinkan baca untuk pengguna yang terautentikasi
+      allow read: if isAuthenticated();
+      // Izinkan unggah foto selfie berukuran maksimal 5MB dengan format gambar
+      allow write: if isAuthenticated() &&
+                     request.resource.size < 5 * 1024 * 1024 &&
+                     request.resource.contentType.matches('image/.*');
+    }
+  }
+}

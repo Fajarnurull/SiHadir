@@ -1,0 +1,6 @@
+{
+  "name": "SiHadir",
+  "description": "Sistem Absensi Siswa Online Berbasis Lokasi GPS SMP Negeri 2 Wanadadi V2.5.0 - @TIM IT Kelompok 3 - STIMIK Tunas Bangsa Banjarnegara",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (getUserData().role == 'admin' || request.auth.token.email.matches('.*admin.*'));
+    }
+
+    function isGuru() {
+      return isAuthenticated() && (getUserData().role == 'guru' || isAdmin());
+    }
+
+    function isSiswa() {
+      return isAuthenticated() && getUserData().role == 'siswa';
+    }
+
+    // Koleksi users
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+    }
+
+    // Koleksi kelas
+    match /kelas/{kelasId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Koleksi siswa
+    match /siswa/{siswaId} {
+      allow read: if isGuru() || (isAuthenticated() && (resource.data.uid == request.auth.uid || resource.data.nis == getUserData().nis));
+      allow write: if isAdmin();
+    }
+
+    // Koleksi guruPiket
+    match /guruPiket/{guruId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Koleksi pengaturan
+    match /pengaturan/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Koleksi absensi
+    match /absensi/{absensiId} {
+      allow read: if isGuru() || (isAuthenticated() && (resource.data.uid == request.auth.uid || resource.data.siswaId == getUserData().nis));
+      allow create: if isGuru() || (isAuthenticated() && (request.resource.data.uid == request.auth.uid || request.resource.data.siswaId == getUserData().nis));
+      allow update: if isGuru() || (
+        isAuthenticated() &&
+        resource.data.uid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['jamPulang', 'latitudePulang', 'longitudePulang', 'fotoPulangUrl'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Koleksi resetPasswordRequests
+    match /resetPasswordRequests/{requestId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}
